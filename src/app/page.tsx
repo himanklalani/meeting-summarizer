@@ -1,103 +1,250 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect } from "react";
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [fileContent, setFileContent] = useState<string>("");
+  const [instruction, setInstruction] = useState<string>("");
+  const [summary, setSummary] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [email, setEmail] = useState<string>("");
+  const [subject, setSubject] = useState<string>("");
+  const [emailStatus, setEmailStatus] = useState<string>("");
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const [history, setHistory] = useState<
+    Array<{ summary: string; instruction: string; date: string }>
+  >([]);
+
+  // Load summary history from localStorage on mount or when summary changes
+  useEffect(() => {
+    const stored = localStorage.getItem("summaryHistory");
+    if (stored) setHistory(JSON.parse(stored));
+  }, [summary]);
+
+  // Read uploaded file as text
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setFileContent(reader.result);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Handle summary generation
+  const generateSummary = async () => {
+    if (!fileContent || !instruction) {
+      alert("Transcript and instruction required.");
+      return;
+    }
+    setLoading(true);
+    setSummary("");
+    try {
+      const res = await fetch("/api/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcript: fileContent, instruction }),
+      });
+      const data = await res.json();
+      setSummary(data.summary || "No summary returned.");
+
+      // Save summary history in localStorage
+      if (data.summary) {
+        const entry = {
+          summary: data.summary,
+          instruction,
+          date: new Date().toLocaleString(),
+        };
+        const currentHistory = JSON.parse(
+          localStorage.getItem("summaryHistory") || "[]"
+        );
+        currentHistory.push(entry);
+        localStorage.setItem("summaryHistory", JSON.stringify(currentHistory));
+        setHistory(currentHistory);
+      }
+    } catch {
+      setSummary("Error generating summary.");
+    }
+    setLoading(false);
+  };
+
+  
+  const sendEmail = async () => {
+    setEmailStatus("");
+    try {
+      const res = await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          emails: email,
+          subject: subject || "Your meeting summary",
+          summary,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) setEmailStatus("✅ Email sent!");
+      else setEmailStatus("❌ Error sending email.");
+    } catch {
+      setEmailStatus("❌ Error sending email.");
+    }
+  };
+
+  
+  const copySummary = () => {
+    window.navigator.clipboard.writeText(summary);
+    setEmailStatus("Copied summary to clipboard!");
+    setTimeout(() => setEmailStatus(""), 1500);
+  };
+
+
+  const clearHistory = () => {
+    localStorage.removeItem("summaryHistory");
+    setHistory([]);
+  };
+
+  return (
+    <div className="max-w-xl mx-auto py-10 px-4 sm:px-8 bg-white/95 dark:bg-black/80 rounded-xl shadow-lg space-y-8 border border-gray-300">
+      <h1 className="text-3xl font-extrabold text-center text-blue-300 mb-3 tracking-tight">
+        AI Meeting Notes Summarizer
+      </h1>
+
+      <hr className="my-2 border-gray-300" />
+
+      <div>
+        <label className="block mb-2 font-semibold">
+          1. Upload transcript (.txt) or paste transcript:
+        </label>
+        <input
+          type="file"
+          accept=".txt"
+          className="mb-2 block"
+          onChange={handleFileChange}
+        />
+        <textarea
+          className="w-full border rounded p-2 mb-2 bg-white dark:bg-black/30"
+          rows={5}
+          placeholder="...or paste text transcript here"
+          value={fileContent}
+          onChange={(e) => setFileContent(e.target.value)}
+        />
+      </div>
+
+      <hr className="my-2 border-gray-300" />
+
+      <div>
+        <label className="block mb-2 font-semibold">2. Instruction / Prompt:</label>
+        <textarea
+          className="w-full border rounded p-2 bg-white dark:bg-black/30"
+          rows={2}
+          value={instruction}
+          onChange={(e) => setInstruction(e.target.value)}
+          placeholder='e.g. Summarize in bullet points for executives'
+        />
+      </div>
+
+      <button
+        onClick={generateSummary}
+        className="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+        disabled={loading || !fileContent || !instruction}
+      >
+        {loading ? "Generating..." : "Generate Summary"}
+      </button>
+
+      {summary && (
+        <>
+          <hr className="my-4 border-gray-300" />
+
+          <div>
+            <label className="block mb-2 font-semibold">
+              3. Edit your summary (will be emailed as-is):
+            </label>
+            <div className="flex gap-2 items-center">
+              <textarea
+                className="w-full border rounded p-2 bg-white dark:bg-black/20"
+                rows={10}
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
+              />
+              <button
+                className="px-3 py-1 bg-gray-200 dark:bg-black/40 rounded text-sm border border-gray-300 font-mono"
+                onClick={copySummary}
+                type="button"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {summary && (
+        <>
+          <hr className="my-4 border-gray-300" />
+
+          <div>
+            <label className="block mb-2 font-semibold">
+              4. Share summary by email (comma-separated if more than one):
+            </label>
+            <input
+              type="text"
+              className="w-full border rounded p-2 mb-2"
+              placeholder="recipient@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <input
+              className="w-full border rounded p-2 mb-2"
+              placeholder="Email subject (optional)"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+            />
+            <button
+              onClick={sendEmail}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-green-400 transition"
+              disabled={!email}
+            >
+              Send Email
+            </button>
+            {emailStatus && (
+              <div className="mt-2 text-sm text-center">{emailStatus}</div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Summary History Section */}
+      <div className="mt-10 bg-gray-50 dark:bg-black/30 border rounded p-4">
+        <div className="flex justify-between items-center">
+          <h2 className="font-bold text-lg text-blue-300">Summary History</h2>
+          <button
+            className="px-3 py-1 bg-red-800 hover:bg-red-500 text-white text-xs rounded"
+            onClick={clearHistory}
+            type="button"
           >
-            Read our docs
-          </a>
+            Clear
+          </button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <ul className="mt-3 space-y-3 max-h-64 overflow-y-auto">
+          {history.length === 0 && (
+            <li className="text-gray-500 text-center">No summaries yet...</li>
+          )}
+          {history.map((item, idx) => (
+            <li
+              key={idx}
+              className="bg-white dark:bg-black/20 rounded p-2 border break-words"
+            >
+              <div className="text-xs text-gray-500 mb-1">{item.date}</div>
+              <div className="font-medium mb-1">
+                Prompt: <span className="italic">{item.instruction}</span>
+              </div>
+              <pre className="whitespace-pre-wrap text-sm">{item.summary}</pre>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
