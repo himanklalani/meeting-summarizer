@@ -67,7 +67,7 @@ export default function Home() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const res = await fetch("http://localhost:8000/extract-text", {
+      const res = await fetch("/api/extract-text", {   
         method: "POST",
         body: formData,
       });
