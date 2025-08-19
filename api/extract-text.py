@@ -2,12 +2,11 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 import fitz  # PyMuPDF
 from fastapi.middleware.cors import CORSMiddleware
-
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://your-vercel-frontend-domain.vercel.app"],  # Update with your actual Vercel frontend URL
+    allow_origins=["https://meeting-summarizer-himanklalani-himanks-projects-93eea234.vercel.app?_vercel_share=iilbNtbL4EzmCOAKG66DqrKGFFNsrVsL"],  # Update with your actual Vercel frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -19,7 +18,7 @@ def extract_text_from_pdf_file(pdf_bytes: bytes) -> str:
 
 # Note: Vercel Python serverless functions map to /api/<filename> by default,
 # so define your route without a prefix.
-@app.post("/")
+@app.post("/extract-text")
 async def extract_text(file: UploadFile = File(...)):
     pdf_bytes = await file.read()
     try:
