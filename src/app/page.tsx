@@ -18,6 +18,14 @@ type HistoryItem = {
 };
 
 export default function Home() {
+  // Initialize historyOpen based on screen width (mobile closed, desktop open)
+  const [historyOpen, setHistoryOpen] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth >= 640; // open if screen is md or larger
+    }
+    return true; // default to open for SSR
+  });
+
   const [fileContent, setFileContent] = useState("");
   const [instruction, setInstruction] = useState("");
   const [summary, setSummary] = useState("");
@@ -26,7 +34,6 @@ export default function Home() {
   const [subject, setSubject] = useState("");
   const [emailStatus, setEmailStatus] = useState("");
   const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [historyOpen, setHistoryOpen] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [dark, setDark] = useState(
     typeof window !== "undefined"
@@ -34,10 +41,10 @@ export default function Home() {
       : false
   );
 
-  // On mount
   useEffect(() => {
     setMounted(true);
     if (typeof window !== "undefined") {
+      setHistoryOpen(window.innerWidth >= 640); // ensure synced on mount
       const stored = localStorage.getItem("summaryHistory");
       if (stored) setHistory(JSON.parse(stored));
     }
@@ -194,9 +201,9 @@ export default function Home() {
           flex flex-col pt-6 px-5 pb-3 transition-all duration-700"
       >
         <button
-          className="absolute -left-10 top-5
+          className="absolute -left-8 top-5
             bg-indigo-900 dark:bg-indigo-800
-            text-white p-2 rounded-full shadow-lg border border-indigo-600/700
+            text-white p-3 rounded-full shadow-lg border border-indigo-600/700 z-50
             transition-colors transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-pink-400"
           onClick={() => setHistoryOpen((v) => !v)}
           type="button"
@@ -394,8 +401,7 @@ export default function Home() {
               exit={{ opacity: 0, y: -10 }}
             >
               <label className="block font-semibold text-blue-500 dark:text-pink-500">
-                4. Share summary{" "}
-                <span className=" dark:text-blue-500">(comma separated emails):</span>
+                4. Share summary <span className=" dark:text-blue-500">(comma separated emails):</span>
               </label>
               <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
                 <input
