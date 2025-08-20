@@ -1,7 +1,9 @@
-from fastapi import FastAPI, File, UploadFile
+import logging
+from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
-import fitz  # PyMuPDF
 from fastapi.middleware.cors import CORSMiddleware
+import fitz  # PyMuPDF
+
 app = FastAPI()
 
 app.add_middleware(
@@ -12,12 +14,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def extract_text_from_pdf_file(pdf_bytes: bytes) -> str:
-    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    return " ".join([page.get_text() for page in doc])
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Note: Vercel Python serverless functions map to /api/<filename> by default,
-# so define your route without a prefix.
+def extract_text_from_pdf_file(pdf_bytes: bytes) -> str:
+    try:
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        return " ".join([page.get_text() for page in doc])
+    except Exception as e:
+        logger.error(f"Error extracting text from PDF: {e}")
+        raise
+
 @app.post("/extract-text")
 async def extract_text(file: UploadFile = File(...)):
     pdf_bytes = await file.read()
@@ -25,4 +33,6 @@ async def extract_text(file: UploadFile = File(...)):
         text = extract_text_from_pdf_file(pdf_bytes)
         return JSONResponse({"text": text})
     except Exception as e:
-        return JSONResponse({"error": f"Failed to process PDF: {str(e)}"}, status_code=400)
+        error_message = f"Failed to process PDF: {str(e)}"
+        logger.error(error_message)
+        raise HTTPException(status_code=400, detail=error_message)

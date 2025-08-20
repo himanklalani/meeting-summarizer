@@ -67,18 +67,28 @@ async function uploadAndExtractPdf(file: File) {
   const formData = new FormData();
   formData.append("file", file);
   try {
-    const res = await fetch("https://meeting-summarizer-iykk.onrender.com/extract-text", {  // <-- updated!
+    const res = await fetch("https://meeting-summarizer-iykk.onrender.com/extract-text", {
       method: "POST",
       body: formData,
     });
-    if (!res.ok) throw new Error("Failed to extract");
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.detail || "Failed to extract");
+    }
     const data = await res.json();
     return data.text || "";
-  } catch {
-    alert("Failed to extract text from PDF.");
-    return "";
+  } catch (error) {
+  // Check if error is instance of Error to safely access .message
+  if (error instanceof Error) {
+    alert(`Extraction failed: ${error.message}`);
+  } else {
+    alert("Extraction failed: " + String(error));
   }
+  return "";
 }
+
+}
+
 
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,7 +114,7 @@ async function uploadAndExtractPdf(file: File) {
       alert("Both transcript and instruction required.");
       return;
     }
-    setLoading(true);
+    setLoading(true); 
     setSummary("");
     try {
       const res = await fetch("/api/summarize", {
