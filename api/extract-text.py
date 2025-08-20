@@ -8,7 +8,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://meeting-summarizer-pszciaxzv-himanks-projects-93eea234.vercel.app"],  # Update with your actual Vercel frontend URL
+    allow_origins=["https://meeting-summarizer-eight.vercel.app"],  # Update with your actual Vercel frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
