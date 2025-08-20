@@ -41,12 +41,21 @@ export default function Home() {
       : false
   );
 
+  // State to detect mobile screen
+  const [isMobile, setIsMobile] = useState(false);
+
   useEffect(() => {
     setMounted(true);
     if (typeof window !== "undefined") {
       setHistoryOpen(window.innerWidth >= 640); // ensure synced on mount
       const stored = localStorage.getItem("summaryHistory");
       if (stored) setHistory(JSON.parse(stored));
+      
+      // Mobile detection
+      const checkMobile = () => setIsMobile(window.innerWidth < 640);
+      checkMobile();
+      window.addEventListener("resize", checkMobile);
+      return () => window.removeEventListener("resize", checkMobile);
     }
   }, []);
 
@@ -63,33 +72,29 @@ export default function Home() {
     toggleProgress.set(dark ? 1 : 0);
   }, [dark, toggleProgress]);
 
-async function uploadAndExtractPdf(file: File) {
-  const formData = new FormData();
-  formData.append("file", file);
-  try {
-    const res = await fetch("https://meeting-summarizer-iykk.onrender.com/extract-text", {
-      method: "POST",
-      body: formData,
-    });
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.detail || "Failed to extract");
+  async function uploadAndExtractPdf(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const res = await fetch("https://meeting-summarizer-iykk.onrender.com/extract-text", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || "Failed to extract");
+      }
+      const data = await res.json();
+      return data.text || "";
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(`Extraction failed: ${error.message}`);
+      } else {
+        alert("Extraction failed: " + String(error));
+      }
+      return "";
     }
-    const data = await res.json();
-    return data.text || "";
-  } catch (error) {
-  // Check if error is instance of Error to safely access .message
-  if (error instanceof Error) {
-    alert(`Extraction failed: ${error.message}`);
-  } else {
-    alert("Extraction failed: " + String(error));
   }
-  return "";
-}
-
-}
-
-
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -114,7 +119,7 @@ async function uploadAndExtractPdf(file: File) {
       alert("Both transcript and instruction required.");
       return;
     }
-    setLoading(true); 
+    setLoading(true);
     setSummary("");
     try {
       const res = await fetch("/api/summarize", {
@@ -211,16 +216,29 @@ async function uploadAndExtractPdf(file: File) {
           shadow-2xl border-l border-blue-500/10
           flex flex-col pt-6 px-5 pb-3 transition-all duration-700"
       >
+        {/* Existing drawer toggle button */}
         <button
-          className="absolute -left-8 top-5
-            bg-indigo-900 dark:bg-indigo-800
-            text-white p-3 rounded-full shadow-lg border border-indigo-600/700 z-50
-            transition-colors transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-pink-400"
+          className="absolute top-5 -left-45 sm:-left-8
+          bg-indigo-900 dark:bg-indigo-800
+          text-white p-3 rounded-full shadow-lg border border-indigo-600/70 z-50
+          transition-colors transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-pink-400"
           onClick={() => setHistoryOpen((v) => !v)}
           type="button"
         >
           {historyOpen ? "⮜" : "⮞"}
         </button>
+
+        {/* New Close button only visible on mobile when drawer is open */}
+        {isMobile && historyOpen && (
+          <button
+            onClick={() => setHistoryOpen(false)}
+            className="absolute top-16 left-4 p-1 bg-red-600 text-white rounded-md shadow-md sm:hidden z-50"
+            type="button"
+          >
+            Close
+          </button>
+        )}
+
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-xl font-bold text-blue-300">Summary History</h2>
           <button
@@ -263,21 +281,21 @@ async function uploadAndExtractPdf(file: File) {
               : "bg-gradient-to-br from-blue-160 via-indigo-100 to-pink-300"
           }`}
       >
-        {/* Theme Toggle */}
-        <div className="flex justify-end">
-          <motion.button
-            aria-label="Toggle theme"
-            onClick={() => setDark((d) => !d)}
-            type="button"
-            className="p-3 rounded-full shadow border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-900 hover:scale-125 transition"
-            style={{ backgroundColor: bgColor }}
-            whileTap={{ scale: 0.9 }}
-          >
-            <motion.div style={{ color: iconColor }}>
-              {dark ? <FiSun size={24} /> : <FiMoon size={22} />}
-            </motion.div>
-          </motion.button>
-        </div>
+       {/* Theme Toggle */}
+<div className="flex justify-start">
+  <motion.button
+    aria-label="Toggle theme"
+    onClick={() => setDark((d) => !d)}
+    type="button"
+    className="p-3 rounded-full shadow border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-900 hover:scale-125 transition"
+    style={{ backgroundColor: bgColor }}
+    whileTap={{ scale: 0.9 }}
+  >
+    <motion.div style={{ color: iconColor }}>
+      {dark ? <FiSun size={24} /> : <FiMoon size={22} />}
+    </motion.div>
+  </motion.button>
+</div>
 
         {/* Title */}
         <motion.h1
@@ -297,7 +315,7 @@ async function uploadAndExtractPdf(file: File) {
           dark:from-slate-900/60 dark:to-slate-800/50 shadow-md"
         >
           <label className="block mb-2 font-semibold text-slate-700 dark:text-blue-500">
-            <span className="text-pink-500">1. Upload transcript</span> (.txt, .pdf) or paste transcript:
+            <span className="text-pink-500">1. Upload transcript (.txt, .pdf) or paste transcript:</span> 
           </label>
           <input
             type="file"
@@ -309,9 +327,9 @@ async function uploadAndExtractPdf(file: File) {
           />
           <textarea
             rows={5}
-            className="w-full rounded-xl p-3 bg-gradient-to-br from-blue-50 to-white
-            dark:from-slate-900 dark:to-slate-800 text-slate-700 dark:text-white
-            shadow-sm focus:ring-2 focus:ring-indigo-500 transition"
+            className="w-full border-none rounded-xl p-3 text-slate-700 dark:text-white
+    bg-pink-50/80 dark:bg-slate-900/80
+    shadow-sm focus:ring-2 focus:ring-pink-500"
             placeholder="Paste transcript..."
             value={fileContent}
             onChange={(e) => setFileContent(e.target.value)}
@@ -327,14 +345,15 @@ async function uploadAndExtractPdf(file: File) {
             <span className="text-pink-500">2. Instruction / Prompt:</span>
           </label>
           <textarea
-            rows={2}
-            className="w-full border-none rounded-xl p-3 text-slate-700 dark:text-white
-            bg-gradient-to-br from-pink-50 to-blue-50 dark:from-slate-900 dark:to-blue-950
-            shadow-sm focus:ring-2 focus:ring-pink-500"
-            placeholder="e.g. Summarize in bullet points for executives"
-            value={instruction}
-            onChange={(e) => setInstruction(e.target.value)}
-          />
+  rows={2}
+  className="w-full border-none rounded-xl p-3 text-slate-700 dark:text-white
+    bg-pink-50/80 dark:bg-slate-900/80
+    shadow-sm focus:ring-2 focus:ring-pink-500"
+  placeholder="e.g. Summarize in bullet points for executives"
+  value={instruction}
+  onChange={(e) => setInstruction(e.target.value)}
+/>
+
         </motion.div>
 
         {/* Generate */}

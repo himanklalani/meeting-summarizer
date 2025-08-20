@@ -29,3 +29,16 @@ body {
   backdrop-filter: blur(17px) brightness(1.07);
   -webkit-backdrop-filter: blur(17px) brightness(1.07);
 }
+
+/* Force textarea to dark style on mobile devices even if light mode */
+@media (max-width: 639px) and (prefers-color-scheme: light) {
+  textarea {
+    background-color: rgba(15, 23, 42, 0.8) !important; /* Tailwind slate-800 with opacity */
+    color: #f1f5f9 !important; /* Tailwind slate-100 */
+    border: none !important;
+  }
+  textarea:focus {
+    outline: none !important;
+    box-shadow: 0 0 0 2px #ec4899 !important; /* pink ring */
+  }
+}
