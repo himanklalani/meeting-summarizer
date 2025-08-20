@@ -50,7 +50,7 @@ export default function Home() {
       setHistoryOpen(window.innerWidth >= 640); // ensure synced on mount
       const stored = localStorage.getItem("summaryHistory");
       if (stored) setHistory(JSON.parse(stored));
-      
+
       // Mobile detection
       const checkMobile = () => setIsMobile(window.innerWidth < 640);
       checkMobile();
@@ -204,10 +204,22 @@ export default function Home() {
         transition={{ duration: 6, repeat: Infinity }}
       />
 
+      {/* Drawer toggle button moved outside the drawer */}
+      <button
+        className="fixed top-5 right-2 sm:right-4
+          bg-indigo-900 dark:bg-indigo-800
+          text-white p-3 rounded-full shadow-lg border border-indigo-600/70 z-50
+          transition-colors transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-pink-400 opacity-100"
+        onClick={() => setHistoryOpen((v) => !v)}
+        type="button"
+      >
+        {historyOpen ? "▶️" : "◀️"}
+      </button>
+
       {/* Responsive Summary History Drawer */}
       <motion.div
         initial={{ x: 64, opacity: 0 }}
-        animate={{ x: historyOpen ? 0 : 550, opacity: historyOpen ? 1 : 0.3 }}
+        animate={{ x: historyOpen ? 0 : 550, opacity: historyOpen ? 1 : 1 }}
         transition={{ type: "spring", stiffness: 210, damping: 26 }}
         className="fixed top-0 right-0 h-full z-40
           w-full max-w-[550px] sm:w-[550px]
@@ -216,38 +228,29 @@ export default function Home() {
           shadow-2xl border-l border-blue-500/10
           flex flex-col pt-6 px-5 pb-3 transition-all duration-700"
       >
-        {/* Existing drawer toggle button */}
-        <button
-          className="absolute top-5 -left-45 sm:-left-8
-          bg-indigo-900 dark:bg-indigo-800
-          text-white p-3 rounded-full shadow-lg border border-indigo-600/70 z-50
-          transition-colors transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-pink-400"
-          onClick={() => setHistoryOpen((v) => !v)}
-          type="button"
-        >
-          {historyOpen ? "⮜" : "⮞"}
-        </button>
-
-        {/* New Close button only visible on mobile when drawer is open */}
+        {/* Clear button moved to top-left on mobile only */}
         {isMobile && historyOpen && (
           <button
-            onClick={() => setHistoryOpen(false)}
-            className="absolute top-16 left-4 p-1 bg-red-600 text-white rounded-md shadow-md sm:hidden z-50"
-            type="button"
-          >
-            Close
-          </button>
-        )}
-
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-xl font-bold text-blue-300">Summary History</h2>
-          <button
-            className="px-3 py-1 text-xs rounded bg-red-800 hover:bg-red-500 text-white"
+            className="absolute top-16 left-4 p-1 bg-red-800 hover:bg-red-500 text-white rounded-md shadow-md sm:hidden z-50"
             onClick={clearHistory}
             type="button"
           >
             Clear
           </button>
+        )}
+
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-xl font-bold text-blue-300">Summary History</h2>
+          {/* Hidden clear button on desktop because moved to mobile top-left */}
+          {!isMobile && (
+            <button
+              className="absolute top-16 left-4 p-1 bg-red-800 hover:bg-red-500 text-white rounded-md shadow-md  z-50"
+              onClick={clearHistory}
+              type="button"
+            >
+              Clear
+            </button>
+          )}
         </div>
         <ul className="flex-1 overflow-y-auto space-y-3 mb-5">
           {history.length === 0 && (
@@ -281,21 +284,22 @@ export default function Home() {
               : "bg-gradient-to-br from-blue-160 via-indigo-100 to-pink-300"
           }`}
       >
-       {/* Theme Toggle */}
-<div className="flex justify-start">
-  <motion.button
-    aria-label="Toggle theme"
-    onClick={() => setDark((d) => !d)}
-    type="button"
-    className="p-3 rounded-full shadow border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-900 hover:scale-125 transition"
-    style={{ backgroundColor: bgColor }}
-    whileTap={{ scale: 0.9 }}
-  >
-    <motion.div style={{ color: iconColor }}>
-      {dark ? <FiSun size={24} /> : <FiMoon size={22} />}
-    </motion.div>
-  </motion.button>
-</div>
+        {/* Theme Toggle */}
+        <div className="flex justify-start">
+          <motion.button
+            aria-label="Toggle theme"
+            onClick={() => setDark((d) => !d)}
+            type="button"
+            className="p-3 rounded-full shadow border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-900 hover:scale-125 transition"
+            style={{ backgroundColor: bgColor }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <motion.div style={{ color: iconColor }}>
+              {dark ? <FiSun size={24} /> : <FiMoon size={22} />}
+            </motion.div>
+          </motion.button>
+        </div>
+
 
         {/* Title */}
         <motion.h1
@@ -315,7 +319,7 @@ export default function Home() {
           dark:from-slate-900/60 dark:to-slate-800/50 shadow-md"
         >
           <label className="block mb-2 font-semibold text-slate-700 dark:text-blue-500">
-            <span className="text-pink-500">1. Upload transcript (.txt, .pdf) or paste transcript:</span> 
+            <span className="text-pink-500">1. Upload transcript (.txt, .pdf) or paste transcript:</span>
           </label>
           <input
             type="file"
@@ -328,8 +332,8 @@ export default function Home() {
           <textarea
             rows={5}
             className="w-full border-none rounded-xl p-3 text-slate-700 dark:text-white
-    bg-pink-50/80 dark:bg-slate-900/80
-    shadow-sm focus:ring-2 focus:ring-pink-500"
+              bg-pink-50/80 dark:bg-slate-900/80
+              shadow-sm focus:ring-2 focus:ring-pink-500"
             placeholder="Paste transcript..."
             value={fileContent}
             onChange={(e) => setFileContent(e.target.value)}
@@ -345,26 +349,26 @@ export default function Home() {
             <span className="text-pink-500">2. Instruction / Prompt:</span>
           </label>
           <textarea
-  rows={2}
-  className="w-full border-none rounded-xl p-3 text-slate-700 dark:text-white
-    bg-pink-50/80 dark:bg-slate-900/80
-    shadow-sm focus:ring-2 focus:ring-pink-500"
-  placeholder="e.g. Summarize in bullet points for executives"
-  value={instruction}
-  onChange={(e) => setInstruction(e.target.value)}
-/>
-
+            rows={2}
+            className="w-full border-none rounded-xl p-3 text-slate-700 dark:text-white
+              bg-pink-50/80 dark:bg-slate-900/80
+              shadow-sm focus:ring-2 focus:ring-pink-500"
+            placeholder="e.g. Summarize in bullet points for executives"
+            value={instruction}
+            onChange={(e) => setInstruction(e.target.value)}
+          />
         </motion.div>
 
-        {/* Generate */}
+        {/* Generate Summary Button */}
         <motion.button
           disabled={!fileContent || !instruction || loading}
           onClick={generateSummary}
           className="w-full text-lg rounded-xl py-3 font-bold text-white
-          bg-gradient-to-r from-indigo-600 via-pink-500 to-pink-300
-          shadow-lg focus:outline-none focus:ring-4 focus:ring-pink-500/50
-          animate-pulse flex items-center justify-center gap-2
-          disabled:opacity-50 transition"
+            bg-gradient-to-r from-indigo-600 via-pink-500 to-pink-400
+            shadow-2xl shadow-pink-500/60 focus:outline-none focus:ring-4 focus:ring-pink-500/50
+            flex items-center justify-center gap-2
+            animate-pulse
+            disabled:opacity-90 transition"
           whileTap={{ scale: 0.97 }}
         >
           {loading ? (
@@ -388,8 +392,8 @@ export default function Home() {
           <AnimatePresence>
             <motion.div
               className="rounded-2xl p-4 shadow-lg my-3
-              bg-gradient-to-br from-slate-900/60 via-indigo-800/40 to-blue-900/30
-              dark:from-slate-900/70 dark:to-indigo-800/50"
+                bg-gradient-to-br from-slate-900/60 via-indigo-800/40 to-blue-900/30
+                dark:from-slate-900/70 dark:to-indigo-800/50"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
@@ -401,14 +405,14 @@ export default function Home() {
                 <textarea
                   rows={8}
                   className="w-full rounded-xl p-3 bg-slate-900/70 dark:bg-slate-800
-                  text-slate-100 dark:text-white shadow-sm focus:ring-2 focus:ring-indigo-500"
+                    text-slate-100 dark:text-white shadow-sm focus:ring-2 focus:ring-indigo-500"
                   value={summary}
                   onChange={(e) => setSummary(e.target.value)}
                 />
                 <motion.button
                   onClick={copySummary}
                   className="px-3 py-2 bg-indigo-400/80 hover:bg-pink-700 text-white
-                  font-bold rounded shadow font-mono transition-all"
+                    font-bold rounded shadow font-mono transition-all"
                   whileHover={{ scale: 1.06 }}
                   whileTap={{ scale: 0.96 }}
                 >
@@ -424,8 +428,8 @@ export default function Home() {
           <AnimatePresence>
             <motion.div
               className="rounded-2xl p-4 space-y-3 shadow
-              bg-gradient-to-br from-indigo-50/60 via-blue-100/25 to-white/50
-              dark:from-slate-900/50 dark:to-indigo-900/30"
+                bg-gradient-to-br from-indigo-50/60 via-blue-100/25 to-white/50
+                dark:from-slate-900/50 dark:to-indigo-900/30"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
@@ -438,18 +442,18 @@ export default function Home() {
                   type="text"
                   placeholder="recipient@example.com"
                   className="flex-1 min-w-[180px] rounded-xl p-2
-                  bg-gradient-to-br from-pink-100 to-blue-100
-                  dark:from-pink-900 dark:to-blue-950
-                  text-blue-900 dark:text-white shadow focus:ring-2 focus:ring-blue-500"
+                    bg-gradient-to-br from-pink-100 to-blue-100
+                    dark:from-pink-900 dark:to-blue-950
+                    text-blue-900 dark:text-white shadow focus:ring-2 focus:ring-blue-500"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
                 <input
                   placeholder="Email subject (optional)"
                   className="flex-1 min-w-[120px] rounded-xl p-2
-                  bg-gradient-to-br from-blue-100 to-pink-100
-                  dark:from-blue-950 dark:to-pink-900
-                  text-blue-900 dark:text-white shadow focus:ring-2 focus:ring-pink-500"
+                    bg-gradient-to-br from-blue-100 to-pink-100
+                    dark:from-blue-950 dark:to-pink-900
+                    text-blue-900 dark:text-white shadow focus:ring-2 focus:ring-pink-500"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                 />
@@ -457,9 +461,9 @@ export default function Home() {
                   disabled={!email}
                   onClick={sendEmail}
                   className="px-4 py-2 rounded-xl text-white font-bold tracking-wide shadow
-                  bg-gradient-to-r from-green-500 via-indigo-400 to-blue-500
-                  focus:outline-none focus:ring-2 focus:ring-green-300
-                  flex items-center gap-2 hover:scale-105 active:scale-95 transition"
+                    bg-gradient-to-r from-green-500 via-indigo-400 to-blue-500
+                    focus:outline-none focus:ring-2 focus:ring-green-300
+                    flex items-center gap-2 hover:scale-105 active:scale-95 transition"
                   whileHover={{ scale: 1.07 }}
                   whileTap={{ scale: 0.97 }}
                 >
