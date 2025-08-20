@@ -63,22 +63,23 @@ export default function Home() {
     toggleProgress.set(dark ? 1 : 0);
   }, [dark, toggleProgress]);
 
-  async function uploadAndExtractPdf(file: File) {
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const res = await fetch("/api/extract-text", {   
-        method: "POST",
-        body: formData,
-      });
-      if (!res.ok) throw new Error("Failed to extract");
-      const data = await res.json();
-      return data.text || "";
-    } catch {
-      alert("Failed to extract text from PDF.");
-      return "";
-    }
+async function uploadAndExtractPdf(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  try {
+    const res = await fetch("https://meeting-summarizer-iykk.onrender.com/extract-text", {  // <-- updated!
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) throw new Error("Failed to extract");
+    const data = await res.json();
+    return data.text || "";
+  } catch {
+    alert("Failed to extract text from PDF.");
+    return "";
   }
+}
+
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
