@@ -431,7 +431,7 @@ export default function Home() {
               exit={{ opacity: 0, y: -10 }}
             >
               <label className="block font-semibold text-blue-500 dark:text-pink-500">
-                4. Share summary <span className=" dark:text-blue-500">(comma separated emails):</span>
+                4. Share summary (comma separated emails):<span className=" dark:text-blue-500">no domain; lolopvt14@gmail.com works for now </span>
               </label>
               <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
                 <input
