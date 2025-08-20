@@ -1,3 +1,0 @@
-fastapi
-pymupdf
-starlette
